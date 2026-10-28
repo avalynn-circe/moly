@@ -1,0 +1,33 @@
+id: RE-N-004
+title: The model receives nothing it can act on
+area: next
+severity: block
+kind: judged
+scope: [tool-result]
+detect:
+  question: >
+    This string is returned to a model as the result of a tool call. Does it tell the model which argument to
+    change, which other tool to call, or that the request cannot succeed and why, so the model can tell the
+    user? It fails when the model can only say "the tool reported an error."
+  evidence: "Quote the result and state what the model's next tool call would be. If you cannot say, the rule hits."
+explain: >
+  A tool result is an error message whose reader is a model. The model has no logs to check, no support to
+  contact, and no patience to lose; it has only the words you return. "Unable to fetch forecast data for this
+  location" gives it nothing to change. Name the argument, the valid range, or the alternative, and the model
+  recovers in one turn.
+fix:
+  kind: rewrite
+  template: "<What the tool could not do>: <cause>. <Change argument X to ... | Call tool Y instead | This cannot succeed because ...; tell the user ...>."
+  touches_tests: true
+see: ["RE-N-001", "RE-W-002"]
+examples:
+  hits:
+    - text: "Unable to fetch forecast data for this location."
+      note: "The MCP tutorial's Python tab. Outside the US, a bad coordinate, and a timeout all read the same, and the model cannot choose a next call."
+    - text: "Error calling tool."
+    - text: "No results."
+      note: "Is that an empty set or a failed query? The model will guess, and then the user will."
+  passes:
+    - text: "No forecast for 51.5074, -0.1278: the NWS covers US locations only. Tell the user this tool cannot forecast London; a different weather source is needed."
+    - text: "Forecast lookup timed out after 30 s for 44.9778, -93.2650. Call get_forecast again once; if it times out twice, report the service as unavailable."
+    - text: "No active alerts for MN as of 2026-10-28T18:10Z. This is a normal result."

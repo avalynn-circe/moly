@@ -1,0 +1,49 @@
+# Drafted listing fields for submit_skill. Review before submitting.
+name: Readable Errors
+summary: Finds error messages that leave the reader guessing and rewrites them to say what happened, why, and what to do next.
+version: "0.1"
+pricing_type: paid
+price: 19
+tags: [code-quality-review, technical-documentation, testing-debugging]
+keywords: [error messages, error handling, developer experience, MCP, tool results, UX writing, validation messages, SARIF]
+requirements: ["Python 3.10 or later (for the bundled mechanical checker)"]
+compatibility_note: Runs in any agent that can read a codebase and run a Python script. The mechanical tier runs without a model; the ten judged rules need the agent to read candidates.
+permissions:
+  tools: [bash, read, grep]
+  file_scopes: ["the codebase under review (read); files the user asks to patch (write)"]
+  hosts: []
+  notes: No network access. Nothing leaves the session.
+support_method: https://github.com/avalynn-circe/moly/issues
+docs_url: https://github.com/avalynn-circe/moly
+use_cases:
+  - Audit a service's user-facing error messages before a release.
+  - Make an MCP server's tool results actionable for the model that calls it.
+  - Turn a support queue of "I got an error" tickets into messages that answer the ticket before it is filed.
+  - Add a continuous integration gate that fails on messages that could describe any failure.
+  - Produce the error catalog your documentation never had.
+sample_input: |
+  Review the error messages in src/weather.py. It is an MCP server; the tool results go to Claude.
+sample_output: |
+  12 units read (3 error-message, 7 tool-result, 2 error-test). 4 block, 2 warn, 1 note.
+
+  | Rule | Severity | Where | Message | Why it fails |
+  |---|---|---|---|---|
+  | RE-W-002 | block | src/weather.py:48 | `Unable to fetch alerts or no alerts found.` | The sentence hedges between a failure and an empty result. |
+  | RE-Y-002 | block | src/weather.py:31 | `return None` after `except Exception:` | The program had the cause in its hands and let go of it. |
+  | RE-N-004 | block | src/weather.py:71 | `Unable to fetch forecast data for this location.` | A tool result is an error message whose reader is a model. |
+  ...
+  ### RE-N-004 at src/weather.py:71
+  Proposed, by cause:
+  - No forecast for 51.5074, -0.1278: the NWS covers US locations only. Tell the user this tool cannot forecast London.
+  - Forecast lookup timed out after 30 s. Call get_forecast again once; a second timeout means the service is down.
+usage_example: |
+  "Review the error messages in this repo" gives a findings table. "Fix the block findings in the api module" gives one pull request with the rewrites and the test changes. "Add this as a CI check" wires the mechanical rules into a workflow with SARIF output.
+known_limitations: |
+  Mechanical rules read English. The pack does not choose your product's voice, your error id scheme, or your localization pipeline; rewrites leave those as visible slots. Duplicate-wording detection (RE-F-004) needs the whole codebase at once and does not run in CI gate mode. Judged rules report in CI and do not fail it in this version.
+faq:
+  - question: Does it rewrite everything?
+    answer: No. Review mode changes nothing. Patch mode rewrites block and warn findings, one pull request per module, with the test changes in the same commit, and only when you ask.
+  - question: Will it break my tests?
+    answer: It finds the tests that pin the old wording first (RE-F-003) and changes them with the message, to assert on the error type or code.
+  - question: Why does it care about tool results?
+    answer: A string returned to a model is an error message whose reader has no logs and one turn to recover. If the message does not say which argument to change, the model guesses, and then your user does.

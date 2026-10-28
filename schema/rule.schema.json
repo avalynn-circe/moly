@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avalynn-circe/moly/schema/rule.schema.json",
+  "title": "Moly rule",
+  "description": "One rule: what to look for in a unit of text, why it fails the reader, and how to fix it.",
+  "type": "object",
+  "required": ["id", "title", "area", "severity", "kind", "scope", "detect", "explain", "fix", "examples"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,5}-[A-Z]-[0-9]{3}$",
+      "description": "PACK-AREA-NNN. Stable forever. Retire an id; never reuse it."
+    },
+    "title": { "type": "string", "maxLength": 80, "description": "The failure, stated as a fact about the text." },
+    "area": { "type": "string", "pattern": "^[a-z][a-z-]*$", "description": "Pack-defined grouping. The letter in the id abbreviates it." },
+    "severity": {
+      "type": "string",
+      "enum": ["block", "warn", "note"],
+      "description": "block: the text does not do its job. warn: it does its job badly. note: it could do it better."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["mechanical", "judged"],
+      "description": "mechanical: patterns decide, no model needed. judged: a model answers a question and must quote evidence."
+    },
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^[a-z][a-z-]*$" },
+      "description": "Unit types from the pack's units list that this rule reads."
+    },
+    "status": { "type": "string", "enum": ["active", "draft", "retired"], "default": "active" },
+    "detect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Regular expressions, case-insensitive unless the rule sets case: true. Any match is a hit. Required for mechanical rules."
+        },
+        "case": { "type": "boolean", "default": false },
+        "unless": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Regular expressions that cancel a pattern hit on the same unit."
+        },
+        "prefilter": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Judged rules only. Cheap patterns that select candidate units so the model reads fewer of them. A unit that matches none is not a candidate."
+        },
+        "question": {
+          "type": "string",
+          "description": "Judged rules only. The yes/no question the model answers about one unit. Yes means a hit."
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Judged rules only. What the model must quote to support a yes. A finding without this evidence is invalid."
+        }
+      }
+    },
+    "explain": {
+      "type": "string",
+      "description": "Why this fails the reader. Voice-neutral. The pack's voice layer may restyle it; it may not change the claim."
+    },
+    "fix": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["rewrite", "procedure", "none"] },
+        "template": { "type": "string", "description": "rewrite: the shape of the corrected text, with <angle> slots." },
+        "steps": { "type": "array", "items": { "type": "string" }, "description": "procedure: ordered steps the agent or author follows." },
+        "touches_tests": { "type": "boolean", "default": false, "description": "True when applying the fix changes text that tests may assert on." }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["when"],
+        "additionalProperties": false,
+        "properties": {
+          "when": { "type": "string", "description": "The condition under which the text may stand." },
+          "marker_required": { "type": "boolean", "default": true, "description": "Whether the author must mark the exception inline." }
+        }
+      }
+    },
+    "examples": {
+      "type": "object",
+      "required": ["hits", "passes"],
+      "additionalProperties": false,
+      "properties": {
+        "hits": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/example" } },
+        "passes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/example" } }
+      },
+      "description": "The rule's contract. Mechanical rules must hit every hit and miss every pass. Judged rules use them to calibrate the model."
+    },
+    "see": { "type": "array", "items": { "type": "string" }, "description": "Related rule ids or source references." }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "mechanical" } } },
+      "then": { "properties": { "detect": { "required": ["patterns"] } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "judged" } } },
+      "then": { "properties": { "detect": { "required": ["question", "evidence"] } } }
+    }
+  ],
+  "$defs": {
+    "example": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "context": { "type": "string", "description": "Surrounding code or prose the judge needs. Optional." },
+        "reader": { "type": "string", "description": "Who reads this unit: user, developer, operator, model." },
+        "note": { "type": "string", "description": "Why this is a hit or a pass. Teaches the judge." }
+      }
+    }
+  }
+}

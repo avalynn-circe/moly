@@ -1,0 +1,7 @@
+dist/
+__pycache__/
+*.pyc
+.venv/
+units.json
+mechanical.json
+candidates.json

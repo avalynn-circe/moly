@@ -1,0 +1,41 @@
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract:
+    name: Rule contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Validate schemas and run every pack's fixture contract
+        run: |
+          for pack in packs/*/; do
+            python -m moly check "$pack"
+          done
+      - name: Build the Readable Errors skill folder and run the one-file engine
+        run: |
+          python scripts/build_pack.py packs/readable-errors dist/
+          python -I dist/readable-errors/scripts/moly_lite.py check dist/readable-errors
+      - name: Scan the pack's own hit examples through the CLI (smoke test)
+        run: python scripts/smoke.py packs/readable-errors
+
+  prose:
+    name: Circe Editorial Standard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: errata-ai/vale-action@v2
+        with:
+          files: '["README.md", "docs", "packs/readable-errors/SKILL.md", "packs/readable-errors/references"]'
+          fail_on_error: true
+          reporter: github-pr-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,44 @@
+id: RE-W-003
+title: The message names the mechanism, not the event
+area: what
+severity: warn
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  prefilter:
+    - '\b[A-Z][A-Za-z]+(Error|Exception|Fault)\b'
+    - '\bE[A-Z]{4,}\b'
+    - '\b(5\d\d|4\d\d)\b'
+    - '\b(null|nil|undefined|NaN|segfault|stack\s*trace|traceback)\b'
+  question: >
+    Does the message tell the reader only the internal mechanism that failed (an exception class, an errno,
+    a status code, a null reference) and not the event in the reader's terms (what they were trying to do
+    and what did not happen)?
+  evidence: "Quote the mechanism name or code that stands in for the event."
+explain: >
+  The reader asked the program to do something. The message answers with the name of the part that broke.
+  "NullReferenceException in OrderHandler" tells a developer where to look and tells a user nothing.
+  State the event first; the mechanism can follow for the reader who can use it.
+fix:
+  kind: rewrite
+  template: "<Could not / Did not> <the thing the reader asked for>: <the cause in plain terms>. <Step>. (<mechanism> for the developer, where the reader is one)"
+  touches_tests: true
+exceptions:
+  - when: "The reader is a developer and the unit is a log line or a developer-facing error. The mechanism is the event for them."
+    marker_required: false
+examples:
+  hits:
+    - text: "ECONNREFUSED"
+      reader: user
+    - text: "NullReferenceException in OrderHandler.Submit"
+      reader: user
+    - text: "500"
+      reader: model
+      note: "A model receives a status code and has nothing to act on."
+  passes:
+    - text: "Could not submit the order: the payment service refused the connection (ECONNREFUSED on port 8443). Check that payments-svc is running."
+      reader: operator
+    - text: "ECONNREFUSED 10.0.0.4:8443 payments-svc"
+      reader: developer
+      context: "logger.error(...)"
+      note: "A log line read by the person who knows what the code means."

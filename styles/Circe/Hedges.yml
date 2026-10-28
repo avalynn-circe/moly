@@ -1,0 +1,9 @@
+# CES-Q-001. SHOULD AVOID, so this rule reports without failing CI.
+extends: existence
+message: "CES-Q-001: Hedge '%s'. Delete it; the sentence holds without it."
+level: warning
+ignorecase: true
+tokens:
+  - 'just'
+  - 'actually'
+  - 'really'

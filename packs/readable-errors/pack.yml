@@ -1,0 +1,73 @@
+name: Readable Errors
+slug: readable-errors
+prefix: RE
+version: "0.1.0"
+summary: Finds error messages that leave the reader guessing, and rewrites them to say what happened, why, and what to do next.
+
+method:
+  test:
+    - "What happened? The event, in the reader's terms."
+    - "Why? The cause or the rule that was broken, with the value that broke it."
+    - "What next? One step the reader can take from where they stand."
+  source: "The three-question test from Avalynn Circe's work on error messages. Applied publicly in finding R-01 of the MCP server tutorial review."
+
+units:
+  - type: error-message
+    description: A string a program shows a person when something fails. CLI stderr, UI toasts, validation text, HTTP error bodies meant for humans.
+    readers: [user, operator]
+    locate:
+      - "Python: raise SomeError(\"...\"), raise ... from, sys.exit(\"...\"), click.BadParameter, argparse error()"
+      - "TypeScript/JavaScript: throw new Error(\"...\"), new HttpError(status, \"...\"), res.status(4xx|5xx).send/json"
+      - "Go: errors.New(\"...\"), fmt.Errorf(\"...\"), http.Error(w, \"...\")"
+      - "Rust: Err(\"...\"), anyhow!(\"...\"), bail!(\"...\"), panic!(\"...\")"
+      - "Any: message catalogs, i18n bundles, enum-to-string tables keyed by error code"
+  - type: tool-result
+    description: A string a tool returns to a model when the tool cannot do what was asked. MCP tool results, function-calling returns, agent action outcomes.
+    readers: [model]
+    locate:
+      - "Return paths of functions registered as tools: @mcp.tool, server.tool(...), function-calling handlers"
+      - "Strings returned where a result was expected: return \"Unable to ...\", return None after except"
+  - type: log-line
+    description: A string written to a log at error or warning level. Read later, by someone diagnosing.
+    readers: [developer, operator]
+    locate:
+      - "logger.error, logger.warning, log.Error, console.error, tracing::error!, slog, structured-logging calls at error level"
+  - type: error-test
+    description: A test that asserts on the text of an error message. Not an error itself; it decides what a rewrite costs.
+    readers: [developer]
+    locate:
+      - "assertEqual(str(e), ...), toThrow(\"...\"), assert \"...\" in str(exc), expect(err.message).toBe(...)"
+
+areas:
+  - letter: W
+    name: what
+    asks: "What happened?"
+  - letter: Y
+    name: why
+    asks: "Why did it happen?"
+  - letter: N
+    name: next
+    asks: "What does the reader do next?"
+  - letter: F
+    name: form
+    asks: "Does the form of the message serve its reader?"
+
+voice:
+  name: plain
+  register: >
+    Direct and unornamented. The finding states what the message fails to tell its reader,
+    then shows the message that would. No persona, no jokes, no apology. The reader of a
+    finding is a developer who wants to fix it and move on.
+  may:
+    - "Shorten the explanation when the quote makes the failure obvious."
+    - "Name the reader (user, operator, model) when the rule depends on who reads the message."
+  may_not:
+    - "Change which rule fired or its severity."
+    - "Add a claim the rule's explanation does not make."
+    - "Propose a rewrite that drops the value or cause the original carried."
+  sample:
+    neutral: "The message says the input is invalid and does not say what valid looks like or which value failed."
+    voiced: "\"Invalid state code\" tells the reader they were wrong and nothing else. Say the rule and echo the value: \"State code must be two letters, like MN. Got 'minn'.\""
+
+modes: [review, patch, gate]
+marker: "moly: allow <RULE-ID> <reason>"

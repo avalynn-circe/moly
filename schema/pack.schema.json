@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avalynn-circe/moly/schema/pack.schema.json",
+  "title": "Moly pack",
+  "description": "A pack is a set of rules, the units they read, and the voice that delivers them.",
+  "type": "object",
+  "required": ["name", "slug", "prefix", "version", "method", "units", "areas", "voice"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string" },
+    "slug": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "prefix": { "type": "string", "pattern": "^[A-Z]{2,5}$", "description": "Rule id prefix. Unique across packs." },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+    "summary": { "type": "string", "maxLength": 160 },
+    "method": {
+      "type": "object",
+      "required": ["test", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "test": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "The questions every unit must answer. The rules are the ways a unit fails them." },
+        "source": { "type": "string", "description": "Where the method comes from." }
+      }
+    },
+    "units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "description", "readers"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string", "pattern": "^[a-z][a-z-]*$" },
+          "description": { "type": "string" },
+          "readers": { "type": "array", "items": { "type": "string", "enum": ["user", "developer", "operator", "model"] } },
+          "locate": { "type": "array", "items": { "type": "string" }, "description": "Where an agent finds units of this type. Prose, grep hints, or both." }
+        }
+      }
+    },
+    "areas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["letter", "name", "asks"],
+        "additionalProperties": false,
+        "properties": {
+          "letter": { "type": "string", "pattern": "^[A-Z]$" },
+          "name": { "type": "string", "pattern": "^[a-z][a-z-]*$" },
+          "asks": { "type": "string", "description": "The method question this area serves." }
+        }
+      }
+    },
+    "voice": {
+      "type": "object",
+      "required": ["name", "register"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Persona name, or 'plain' for none." },
+        "register": { "type": "string", "description": "One paragraph: how findings sound in this pack." },
+        "may": { "type": "array", "items": { "type": "string" }, "description": "What the voice may change in an explanation." },
+        "may_not": { "type": "array", "items": { "type": "string" }, "description": "What the voice may never change." },
+        "sample": {
+          "type": "object",
+          "required": ["neutral", "voiced"],
+          "properties": { "neutral": { "type": "string" }, "voiced": { "type": "string" } }
+        }
+      }
+    },
+    "modes": { "type": "array", "items": { "type": "string", "enum": ["review", "patch", "gate"] } },
+    "marker": { "type": "string", "description": "The inline allow-marker syntax for this pack's units. Defaults to the engine marker." }
+  }
+}

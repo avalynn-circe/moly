@@ -1,0 +1,17 @@
+# CES-C-008. MUST AVOID, so this rule fails CI.
+# End the sentence at the positive point.
+# Exception: keep a contrast when the alternative is factual information
+# the reader needs, such as a migration ("moved from MS Access to SQL Server").
+# Silence a justified exception with an inline comment:
+#   <!-- vale Circe.TrailingContrast = NO -->
+#   ...sentence...
+#   <!-- vale Circe.TrailingContrast = YES -->
+extends: existence
+message: "CES-C-008: Trailing contrast clause '%s'. End the sentence at the positive point."
+level: error
+ignorecase: true
+tokens:
+  - 'rather than'
+  - 'instead of'
+  - 'not only'
+  - 'not just'

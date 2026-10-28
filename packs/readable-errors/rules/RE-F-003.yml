@@ -1,0 +1,40 @@
+id: RE-F-003
+title: A test pins the exact wording of a message
+area: form
+severity: note
+kind: judged
+scope: [error-test]
+detect:
+  prefilter:
+    - 'assert\w*\(\s*str\('
+    - 'assert\s+str\([^)]*\)\s*==\s*["'']'
+    - 'toThrow\(\s*["'']'
+    - 'toBe\(\s*["''][^"'']*(error|failed|invalid|not found|unable)'
+    - 'assert\s+["''][^"'']+["'']\s+(==|in)\s+str\('
+    - 'assertRaisesRegex|pytest\.raises\([^)]*match='
+  question: >
+    Does this test assert on the full text of an error message, such that improving the message's wording
+    would fail the test without any change in behavior? A test passes this rule when it asserts on an error
+    type, an error code, or a stable fragment that carries meaning (the field name, the value).
+  evidence: "Quote the assertion."
+explain: >
+  The test freezes the sentence. Every rewrite under this pack will fail it, so the sentence will not be
+  rewritten, and the message stays bad to keep the test green. Assert on what the message means: its type, its
+  code, the field or value it names. Let the words improve.
+fix:
+  kind: procedure
+  steps:
+    - "Give the error a type or a code if it has neither."
+    - "Change the assertion to the type or code, plus any fragment that carries meaning (the field name, the echoed value)."
+    - "Where the wording itself is the behavior (a public API contract, a localized string), keep the exact assertion and mark it."
+  touches_tests: true
+exceptions:
+  - when: "The wording is a published contract: an API response consumers parse, a localized string with a translation key."
+    marker_required: true
+examples:
+  hits:
+    - text: 'assert str(exc.value) == "Unable to fetch alerts or no alerts found."'
+    - text: 'expect(() => parse(input)).toThrow("Invalid input")'
+  passes:
+    - text: 'with pytest.raises(InvalidStateCode) as exc: ...; assert "minn" in str(exc.value)'
+    - text: 'expect(err).toBeInstanceOf(WeatherUnavailable); expect(err.code).toBe("TIMEOUT")'

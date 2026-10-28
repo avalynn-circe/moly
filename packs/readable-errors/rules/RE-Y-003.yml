@@ -1,0 +1,36 @@
+id: RE-Y-003
+title: The message names a thing and carries no value for it
+area: why
+severity: warn
+kind: judged
+scope: [error-message, tool-result, log-line]
+detect:
+  prefilter:
+    - '\b(file|path|directory|folder|key|id|user|account|field|value|parameter|argument|option|flag|state|code|record|row|column|table|url|host|port|name)\b'
+  question: >
+    Does the message refer to a specific thing (a file, a key, a user, a field) that the code had in a variable
+    at the time, and leave the value out of the message? Check the surrounding code for interpolation.
+    A message passes if it carries the value, or if no value existed at that point.
+  evidence: "Quote the noun in the message and the variable in scope that held its value."
+explain: >
+  "File not found" is true of every missing file. The code had the path. Without it the reader must
+  reconstruct what the program was looking at, which is work the program could have done in one
+  interpolation. The value is the difference between a message and a riddle.
+fix:
+  kind: rewrite
+  template: "<Thing> '<value>' <what is wrong with it>. <Step>."
+  touches_tests: true
+exceptions:
+  - when: "The value is a secret or personal data that must not reach this reader. State its shape, length, or a redacted form."
+    marker_required: true
+examples:
+  hits:
+    - text: "File not found."
+      context: 'raise FileNotFoundError("File not found.")  # path is in scope'
+    - text: "User does not exist."
+      context: 'return res.status(404).json({ error: "User does not exist." }) // req.params.id in scope'
+    - text: "Missing required field."
+  passes:
+    - text: "File not found: /etc/moly/config.yml. Create it or pass --config <path>."
+    - text: "No user with id 4821."
+    - text: "Missing required field 'email' in the request body."

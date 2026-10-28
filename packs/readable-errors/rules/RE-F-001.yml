@@ -1,0 +1,36 @@
+id: RE-F-001
+title: The message shouts, apologizes, or jokes
+area: form
+severity: note
+kind: mechanical
+scope: [error-message, tool-result]
+detect:
+  patterns:
+    - '!'
+    - '\b(sorry|apologi[sz]e|apologies|our bad|my bad)\b'
+    - '\b(oops|whoops|uh[- ]oh|yikes|d[''’]oh)\b'
+    - '\b(looks like|it seems|seems like)\b'
+  unless:
+    - '!='
+    - '!\['
+explain: >
+  Exclamation marks, apologies, and jokes spend the reader's attention on the program's feelings. The reader
+  has a failure to deal with. The most respectful tone is the one that gets them through it fastest: state the
+  event, the cause, and the step, in the register of a colleague who knows what happened.
+fix:
+  kind: rewrite
+  template: "<Remove the ornament. Keep the event, the cause, and the step.>"
+  touches_tests: true
+exceptions:
+  - when: "The product's voice is established as playful, the message still answers all three questions, and the reader is a consumer in a low-stakes flow."
+    marker_required: true
+examples:
+  hits:
+    - text: "Oops! Something went wrong!"
+    - text: "Sorry, we couldn't save your changes."
+    - text: "Looks like that email is taken."
+  passes:
+    - text: "Could not save your changes: the session expired. Sign in again; your draft is kept."
+    - text: "That email is already registered. Sign in, or reset the password for it."
+    - text: "assert count != 0"
+      note: "Code, not a message. The unless pattern protects the inequality operator."

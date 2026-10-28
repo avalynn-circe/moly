@@ -1,0 +1,8 @@
+# CES-P-001. MUST AVOID, so this rule fails CI.
+extends: existence
+message: "CES-P-001: Remove the em dash. End the sentence or use a comma."
+link: https://avalynncirce.com/
+level: error
+nonword: true
+tokens:
+  - '\x{2014}'

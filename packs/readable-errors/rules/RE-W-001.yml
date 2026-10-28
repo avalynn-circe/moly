@@ -1,0 +1,40 @@
+id: RE-W-001
+title: The message could describe any failure
+area: what
+severity: block
+kind: mechanical
+scope: [error-message, tool-result]
+detect:
+  patterns:
+    - '^\W*(an?\s+)?(unexpected|unknown|internal|general|generic)?\s*(error|failure|problem|exception)(\s+(has\s+)?occurred)?\W*$'
+    - '^\W*something\s+went\s+wrong'
+    - '^\W*(oops|whoops|uh[- ]oh)\b'
+    - '^\W*(operation|request|action|it)\s+failed\W*$'
+    - '^\W*(failed|error)\W*$'
+  unless:
+    - '\b(because|since|due to|while|when)\b'
+    - ':\s*\S'
+explain: >
+  The message names no event. A timeout, a bad argument, a full disk, and a bug all produce the same words,
+  so the reader learns only that they must now investigate. The program knew more than this at the moment
+  it failed and threw the knowledge away.
+fix:
+  kind: rewrite
+  template: "<What failed, in the reader's terms>: <the cause or the value>. <One step the reader can take>."
+  touches_tests: true
+exceptions:
+  - when: "The message is a last-resort handler for a condition the program could not classify, and the message says so and points to where the detail went."
+    marker_required: true
+examples:
+  hits:
+    - text: "Something went wrong."
+    - text: "An unexpected error occurred."
+    - text: "Error"
+    - text: "Operation failed."
+    - text: "Oops! Something broke."
+  passes:
+    - text: "Something went wrong while saving the draft: the disk is full. Free 200 MB and save again."
+      note: "Names the event, the cause, and a step. The opening words are a weak habit but the message does its job."
+    - text: "Could not reach api.weather.gov: timed out after 30 s. Check your connection and retry."
+    - text: "Error: state code must be two letters, like MN. Got 'minn'."
+      note: "The word Error is a prefix; the message continues with the event."

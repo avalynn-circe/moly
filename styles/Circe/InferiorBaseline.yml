@@ -1,0 +1,11 @@
+# Implied inferior baselines. The standard rates this MUST AVOID, but the
+# tokens produce false positives ("real" as a plain adjective), so the rule
+# starts at warning. Promote it to error once the vocabulary settles.
+# "actually" is covered by Hedges.yml and is left out here to avoid a double report.
+extends: existence
+message: "Implied inferior baseline '%s'. State the fact without contrasting it to a lesser version."
+level: warning
+ignorecase: true
+tokens:
+  - 'in practice'
+  - 'real'

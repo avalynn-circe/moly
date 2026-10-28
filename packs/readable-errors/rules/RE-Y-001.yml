@@ -1,0 +1,36 @@
+id: RE-Y-001
+title: The message rejects the input without stating the rule
+area: why
+severity: block
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  prefilter:
+    - '\b(invalid|not\s+valid|malformed|illegal|bad|unsupported|unrecognized|incorrect|wrong)\b'
+    - '\bmust\s+be\b'
+  question: >
+    Does the message say the input is wrong without stating the rule the input broke, or without echoing
+    the value that broke it? A message passes only when the reader can see both what is required and what they gave.
+  evidence: "Quote the rejection and name which of the two is missing: the rule, the value, or both."
+explain: >
+  "Invalid state code" tells the reader they were wrong and leaves them to guess the rule. The code that
+  rejected the value knew the rule, because it applied one. Say the rule and show the value, and the reader
+  fixes it on the first try.
+fix:
+  kind: rewrite
+  template: "<Field> must be <the rule, with an example>. Got <the value as received>."
+  touches_tests: true
+exceptions:
+  - when: "Echoing the value would expose a secret, such as a password or a token. State the rule and the length or shape of what was received instead of the value."
+    marker_required: true
+examples:
+  hits:
+    - text: "Invalid state code."
+    - text: "Bad request."
+    - text: "Email address is not valid."
+    - text: "Unsupported format."
+  passes:
+    - text: "State code must be two letters, like MN. Got 'minn'."
+    - text: "Email address must contain one @ with text on both sides. Got 'avalynn.example.com'."
+    - text: "Password must be at least 12 characters. Got 7."
+      note: "Shape of the value, not the value. The exception for secrets, applied."

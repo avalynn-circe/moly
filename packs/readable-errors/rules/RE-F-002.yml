@@ -1,0 +1,44 @@
+id: RE-F-002
+title: The message leaks internals to a reader who should not see them
+area: form
+severity: block
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  prefilter:
+    - '(/[\w.-]+){3,}'
+    - '[A-Za-z]:\\[\w\\.-]+'
+    - '\b(SELECT|INSERT|UPDATE|DELETE)\b.*\b(FROM|INTO|WHERE)\b'
+    - '\b(at\s+[\w$.]+\s*\(|Traceback|File\s+"[^"]+",\s+line\s+\d+)'
+    - '\b(token|secret|password|api[_-]?key|bearer)\b\s*[:=]'
+    - '\b(10|172|192)\.\d+\.\d+\.\d+\b'
+  question: >
+    Does the message expose a file path, a stack frame, a query, an internal address, or a credential to a
+    reader who is a user or a model outside the trust boundary? For a developer or operator reading a log line,
+    these are the content, not a leak.
+  evidence: "Quote the leaked fragment and name the reader."
+explain: >
+  A stack trace in a user-facing message is two failures: the user cannot use it, and an attacker can. The
+  developer who needs the detail should find it in the log, keyed by an id the user can quote. Give each
+  reader what serves them and nothing that serves someone else.
+fix:
+  kind: procedure
+  steps:
+    - "Generate a short error id at the point of failure."
+    - "Log the full detail (path, trace, query) with that id, at error level."
+    - "Return the user or model a message with the event, the cause in plain terms, the step, and the id."
+  touches_tests: true
+examples:
+  hits:
+    - text: "Error: ENOENT: no such file or directory, open '/srv/app/releases/2026.10.3/config/secrets.yml'"
+      reader: user
+    - text: "SQLSTATE[42S02]: Base table or view not found: SELECT * FROM users_v2 WHERE id = 4821"
+      reader: user
+    - text: "Connection to 10.0.4.17:5432 refused"
+      reader: model
+  passes:
+    - text: "Could not load the application configuration. This is a deployment problem, not something you can fix from here; send support the id cfg-19c2."
+      reader: user
+    - text: "ENOENT /srv/app/releases/2026.10.3/config/secrets.yml id=cfg-19c2"
+      reader: developer
+      context: "logger.error(...)"

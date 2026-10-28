@@ -1,0 +1,34 @@
+id: RE-W-002
+title: One string reports two different outcomes
+area: what
+severity: block
+kind: mechanical
+scope: [error-message, tool-result]
+detect:
+  patterns:
+    - '\b(unable|failed|could\s*n[o'']t|cannot|can[''’]t)\b[^.?!]*\bor\s+(no|none|not\s+found|nothing|empty|missing)\b'
+    - '\bor\s+(no|none)\s+\w+\s+(found|available|exist|returned|matched)'
+    - '\b(not\s+found|does\s+not\s+exist)\s+or\s+(not|un)\w*'
+explain: >
+  The sentence hedges between a failure and an empty result. "Unable to fetch alerts or no alerts found"
+  covers a network error, a rate limit, a bad state code, and a quiet day, and the reader cannot tell which.
+  The code knew which path it took. Report that path.
+fix:
+  kind: procedure
+  steps:
+    - "Find each branch that produces this string. There is one per outcome the sentence hedges over."
+    - "Give each branch its own message that names its outcome."
+    - "An empty result is not an error. Return it as a result with a sentence that says it is empty and why that is fine."
+  touches_tests: true
+examples:
+  hits:
+    - text: "Unable to fetch alerts or no alerts found."
+      note: "Finding R-01 of the MCP server tutorial review. A timeout and a calm day read the same."
+    - text: "Could not load the user or no user exists with that id."
+    - text: "Failed to retrieve results or none matched."
+  passes:
+    - text: "No active alerts for MN."
+      note: "An empty result reported as a result."
+    - text: "Could not fetch alerts for MN: api.weather.gov timed out after 30 s. Retry in a minute."
+    - text: "No file selected or the selection was cancelled. Choose a file to continue."
+      note: "Two outcomes the reader cannot distinguish and does not need to; the next step is the same for both."

@@ -1,0 +1,32 @@
+id: RE-N-003
+title: Retry advice with no condition
+area: next
+severity: warn
+kind: mechanical
+scope: [error-message, tool-result]
+detect:
+  patterns:
+    - '\b(please\s+)?try\s+again(\s+later)?\W*$'
+    - '\bretry(\s+later)?\W*$'
+    - '\bplease\s+(wait|be\s+patient)\W*$'
+  unless:
+    - '\b(after|in|at|once|when|if|until|before)\b'
+    - '\d'
+explain: >
+  "Try again later" gives the reader a verb and no information. Retry in a second or in an hour? Retry at all,
+  or is the failure permanent? The code usually knows: a 429 carries a Retry-After, a timeout has a length,
+  a lock has an owner. Attach the condition and the reader can decide.
+fix:
+  kind: rewrite
+  template: "<Event>: <cause>. Retry <after N seconds | at <time> | once <condition>>. If it fails again, <escalation>."
+  touches_tests: true
+examples:
+  hits:
+    - text: "Service unavailable. Please try again later."
+    - text: "Request failed. Retry."
+    - text: "Please wait."
+  passes:
+    - text: "Service unavailable: the API is rate-limiting this key. Retry after 42 seconds."
+    - text: "Request timed out after 30 s. Retry once the network is back; a second timeout means the host is down."
+    - text: "Try again with a two-letter state code, like MN."
+      note: "Retry with a change is a step, and the change is stated."

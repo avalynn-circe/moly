@@ -1,0 +1,30 @@
+id: RE-F-004
+title: The same failure is reported in several wordings
+area: form
+severity: note
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  question: >
+    Across the codebase, does the same failure condition (the same cause, the same reader, the same step)
+    appear under two or more differently worded messages? Judge this over the whole set of units, not one at a time.
+  evidence: "Quote two or more messages and state the shared condition."
+explain: >
+  Three wordings for one failure means three places to fix it, three strings to translate, and a support team
+  that cannot search for it. One failure, one message, one place. A short catalog keyed by error code turns the
+  rewrite into a lookup and makes every other rule in this pack enforceable in one file.
+fix:
+  kind: procedure
+  steps:
+    - "List the distinct failure conditions behind the duplicated messages."
+    - "Write one message per condition that passes RE-W, RE-Y, and RE-N."
+    - "Move the messages to one catalog keyed by code. Replace each call site with the code."
+    - "Document the catalog. It is the error reference your docs were missing."
+  touches_tests: true
+examples:
+  hits:
+    - text: "Could not connect to database. / DB connection failed. / Database unavailable, please try again."
+      note: "Three call sites, one condition."
+  passes:
+    - text: "DB_UNREACHABLE: Could not connect to the database at <host>:<port>: <reason>. Check that the database is running and reachable from this host."
+      note: "One catalog entry, one code, every call site uses it."

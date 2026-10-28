@@ -1,0 +1,43 @@
+id: RE-N-002
+title: The next step belongs to someone else
+area: next
+severity: warn
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  prefilter:
+    - '\b(contact|ask|notify|tell)\s+(your|the|an?)?\s*(system\s+|it\s+)?(administrator|admin|support|it\b|help\s*desk|developer|vendor|team)'
+    - '\b(see|check|consult|inspect|look\s+at)\s+(the\s+)?(logs?|console|stack\s*trace|server|documentation|docs)\b'
+    - '\bfile\s+(a|an)\s+(bug|issue|ticket)\b'
+  question: >
+    Is the step the message offers one that this reader cannot take from where they stand? Consider who the
+    reader is: a user told to check the server logs, an operator told to contact the administrator when they
+    are the administrator, a model told to file a bug. The step must be reachable by this reader.
+  evidence: "Quote the step and name the reader it was written for."
+explain: >
+  The message hands the reader a step meant for a different person. "Contact your administrator" in a tool
+  only administrators run is a loop. "Check the logs" to a user who has never seen a log is a door with no
+  handle. Give this reader a step they can take, and give the other reader theirs in the place they look.
+fix:
+  kind: procedure
+  steps:
+    - "Decide who reads this message. User, operator, developer, or model."
+    - "Write the step that reader can take. If none exists, write what they should tell the next person, including an id they can quote."
+    - "Put the step for the other reader where that reader looks: the log line, the developer error, the docs page."
+  touches_tests: true
+examples:
+  hits:
+    - text: "Permission denied. Contact your system administrator."
+      reader: operator
+      context: "Printed by a deployment CLI that only administrators have access to."
+    - text: "Upload failed. Check the server logs for details."
+      reader: user
+    - text: "Tool error. Please file an issue at github.com/example/repo."
+      reader: model
+  passes:
+    - text: "Permission denied: this account lacks the deploy:write role on project atlas. Grant it in IAM or run as a service account that has it."
+      reader: operator
+    - text: "Upload failed: the file is 52 MB and uploads stop at 25 MB. Compress it or split it. If it is under 25 MB and still fails, send support the id up-7f3a."
+      reader: user
+    - text: "Could not geocode 'Minneapolis, MM': unknown region 'MM'. Pass a two-letter US state code, like MN."
+      reader: model

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/avalynn-circe/moly/schema/finding.schema.json",
+  "title": "Moly finding",
+  "description": "One hit, in the shape every renderer and every pack shares.",
+  "type": "object",
+  "required": ["rule", "pack", "severity", "kind", "unit", "quote", "explain", "fix"],
+  "additionalProperties": false,
+  "properties": {
+    "rule": { "type": "string", "pattern": "^[A-Z]{2,5}-[A-Z]-[0-9]{3}$" },
+    "pack": { "type": "string" },
+    "title": { "type": "string" },
+    "severity": { "type": "string", "enum": ["block", "warn", "note"] },
+    "kind": { "type": "string", "enum": ["mechanical", "judged"] },
+    "unit": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 },
+        "reader": { "type": "string", "enum": ["user", "developer", "operator", "model"] },
+        "id": { "type": "string", "description": "Pack-defined handle, such as an error code or a paragraph number." }
+      }
+    },
+    "quote": { "type": "string", "description": "The text that triggered the rule, verbatim. Required. A finding with no quote is not a finding." },
+    "evidence": { "type": "string", "description": "Judged findings: the supporting quote the rule's evidence field asked for." },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low"], "description": "Judged findings only. Mechanical findings omit it; they are certain by construction." },
+    "explain": { "type": "string", "description": "The rule's explanation, in the pack's voice." },
+    "fix": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["rewrite", "procedure", "none"] },
+        "proposed": { "type": "string", "description": "rewrite: the proposed replacement text." },
+        "steps": { "type": "array", "items": { "type": "string" } },
+        "touches_tests": { "type": "boolean" }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "required": ["allowed", "reason"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "reason": { "type": "string" },
+        "marker_line": { "type": "integer" }
+      },
+      "description": "Present when an inline marker or a pack exception applies. The finding stays in the record; renderers show it as allowed."
+    }
+  }
+}

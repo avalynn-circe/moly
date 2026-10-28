@@ -1,0 +1,37 @@
+id: RE-N-001
+title: The message stops at the problem
+area: next
+severity: block
+kind: judged
+scope: [error-message, tool-result]
+detect:
+  question: >
+    After reading this message, does the reader know one thing to do next from where they stand? A message
+    passes when it contains a step the reader can take, or when the step is obvious from the message
+    (a stated rule for a value they typed is a step). It fails when it describes the failure and ends.
+  evidence: "Quote the message and state what the reader would have to work out on their own."
+explain: >
+  The message reports and withdraws. The reader is left where the failure found them, now informed and no
+  better off. Every error has a next step, even when the step is "wait and retry at 09:00" or "send this id
+  to support." Write that step; it is the reason the message exists.
+fix:
+  kind: rewrite
+  template: "<Event>: <cause>. <Imperative verb> <the step>."
+  touches_tests: true
+exceptions:
+  - when: "The next step is stated once, immediately after, by the surrounding UI or output (a form that highlights the field, a CLI that prints usage). Mark it, and name where the step appears."
+    marker_required: true
+examples:
+  hits:
+    - text: "Could not connect to the database."
+    - text: "The export failed because the report is too large."
+      note: "Event and cause present, and no step. What is too large? What do I do about it?"
+    - text: "Rate limit exceeded."
+      reader: model
+  passes:
+    - text: "Could not connect to the database at db.internal:5432: connection refused. Check that Postgres is running and the host is reachable from this machine."
+    - text: "The export failed: the report has 1.2 M rows and exports stop at 1 M. Add a date filter or export by month."
+    - text: "Rate limit exceeded: 60 requests per minute. Retry after 2026-10-28T18:31:00Z, or pass fewer locations per call."
+      reader: model
+    - text: "State code must be two letters, like MN. Got 'minn'."
+      note: "The rule is the step."

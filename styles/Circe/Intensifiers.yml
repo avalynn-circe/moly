@@ -1,0 +1,9 @@
+# CES-Q-002. SHOULD AVOID, so this rule reports without failing CI.
+extends: existence
+message: "CES-Q-002: Hollow intensifier '%s'. Delete it."
+level: warning
+ignorecase: true
+tokens:
+  - 'genuinely'
+  - 'truly'
+  - 'deeply'

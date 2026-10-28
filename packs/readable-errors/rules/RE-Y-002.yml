@@ -1,0 +1,55 @@
+id: RE-Y-002
+title: The cause was caught and discarded before the message was written
+area: why
+severity: block
+kind: judged
+scope: [error-message, tool-result, log-line]
+detect:
+  prefilter:
+    - 'except\s*(Exception|BaseException)?\s*:'
+    - 'catch\s*(\(\s*\w*\s*\))?\s*\{'
+    - 'rescue\s*(=>|$)'
+    - 'if\s+err\s*!=\s*nil\s*\{\s*return\s+nil'
+    - '\.catch\(\s*\(\)\s*=>'
+  question: >
+    Does the code path that produces this message catch an exception or error and then write a message that
+    does not carry the caught error's type, text, or cause? Look at the handler above the message, not only at the string.
+  evidence: "Quote the catch or except clause and the message it leads to."
+explain: >
+  The program had the cause in its hands and let go of it. The handler caught everything, returned a
+  placeholder, and the message downstream can only say that a placeholder arrived. Every distinct failure
+  upstream now reads the same, and nobody downstream, person or model, can tell them apart.
+fix:
+  kind: procedure
+  steps:
+    - "Catch the specific errors the call can raise. One handler per kind of failure you can report differently."
+    - "Raise or return a named error that carries the reason: the exception text, the status code, the timeout value."
+    - "Write the user-facing message from that reason, so each kind of failure gets its own sentence."
+    - "Let the ones you cannot classify propagate with their original text attached."
+  touches_tests: true
+see: ["RE-W-001", "RE-W-002"]
+examples:
+  hits:
+    - text: "Unable to fetch alerts or no alerts found."
+      context: |
+        try:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.json()
+        except Exception:
+            return None
+      note: "The MCP tutorial's Python helper. Timeout, 429, 404, and a JSON error all become None, then one string."
+    - text: "Could not save."
+      context: |
+        } catch {
+          showToast("Could not save.");
+        }
+  passes:
+    - text: "Could not fetch alerts for MN: api.weather.gov timed out after 30 s."
+      context: |
+        except httpx.TimeoutException as e:
+            raise WeatherUnavailable(f"api.weather.gov timed out after {e.request.extensions['timeout']['read']} s") from e
+    - text: "Could not save the draft: the server returned 413 (draft is 12 MB, limit 10 MB). Remove an attachment and save again."
+      context: |
+        } catch (err) {
+          if (err instanceof HttpError && err.status === 413) { ... }

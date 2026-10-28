@@ -1,0 +1,16 @@
+[project]
+name = "moly"
+version = "0.1.0"
+description = "A shared rules engine for text that pretends to inform."
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0", "jsonschema>=4.20"]
+
+[project.scripts]
+moly = "moly.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["moly"]
